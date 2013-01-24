@@ -1,0 +1,49 @@
+#!/bin/sh
+#
+# McAfee OTP Server 3 - startup script
+# 
+# Basic support for IRIX style chkconfig
+# chkconfig: 235 03 99
+# description: Starts the OTPServer
+
+# Change path accordingly to the OTP Server installation directory.
+OTPSERVER_HOME=/opt/McAfee/OTPServer3
+OTPCONSOLE_OUT=/opt/McAfee/OTPServer3/logs/otpserver.log
+OTP_PID=/tmp/otpserver.pid
+
+case "$1" in
+'start')   
+            ${OTPSERVER_HOME}/OTPServer>${OTPCONSOLE_OUT} 2>&1 &
+            echo $! >> ${OTP_PID}
+                echo "Starting McAfee OTP Server"
+
+        ;;
+
+'stop')
+        if [ -f ${OTP_PID} ]; then
+                kill -TERM `cat ${OTP_PID}`
+                echo "Stopping McAfee OTP Server"
+                rm -f ${OTP_PID}
+        sleep 3
+        NEWPID=`ps -f | grep OTPServer | grep -v grep | awk '{print $2}'`
+        if [ -n "${NEWPID}" ]; then
+            kill -9 ${NEWPID}
+        fi
+        fi
+    ;;
+'restart')
+        if [ -f ${OTP_PID} ]; then
+                kill -TERM `cat ${OTP_PID}`
+                echo "Stopping McAfee OTP Server..."
+                rm -f ${OTP_PID}
+        sleep 3
+        ${OTPSERVER_HOME}/OTPServer>${OTPCONSOLE_OUT} 2>&1 &
+        echo $! >> ${OTP_PID}
+        echo "Starting McAfee OTP Server..."
+        fi
+        ;;
+*)
+            echo "Usage: $0 { start | stop | restart }"
+            exit 1
+esac
+exit 0
