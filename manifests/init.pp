@@ -43,15 +43,26 @@ class nordicedgeotp inherits nordicedgeotp::params {
 					 Package[$packages] ],
 	}
 
-	# You need a seperate answer file for each server
+	# You need a seperate properties file for each server
+	# It does not overwrite any local changes so you can use the configuring GUI and copy the generated otp file to the puppetmaster.
+	# example: modules/nordicedgeotp/files/hostname.otp.properties
 	file { "/opt/McAfee/OTPServer3/otp.properties":
 		ensure  => file,
 		source  => [ "puppet:///nordicedgeotp/${::hostname}.otp.properties",
 					 "puppet:///nordicedgeotp/otp.properties" ],
+		replace => false,
 		require => Exec["installOTP"],
 		notify  => Service['OTPServer'],
 	}
 
+	# This is the template file for the SMS gateway
+	file { "/opt/McAfee/OTPServer3/kpntemplate.txt":
+		ensure  => file,
+		source  => "puppet:///nordicedgeotp/kpntemplate.txt",
+		require => Exec["installOTP"],
+	}
+
+	# A lovely initscript.
 	file { "/etc/init.d/OTPServer":
 		ensure  => file,
 		source  => "puppet:///nordicedgeotp/init.d-OTPServer",
@@ -66,6 +77,18 @@ class nordicedgeotp inherits nordicedgeotp::params {
 		hasstatus  => false,
 		pattern    => "/opt/McAfee/OTPServer3/OTPServer.lax",
 		require    => File["/etc/init.d/OTPServer"],
+	}
+
+	# Create a license directory for each host and put the XML files in there.
+	# example: modules/nordicedgeotp/files/hostname-license
+	file { "/opt/McAfee/OTPServer3/license":
+		ensure   => directory,
+		source   => [ "puppet:///nordicedgeotp/${::hostname}-license",
+					  "puppet:///nordicedgeotp/license" ],
+		mode     => '0755',
+		recurse  => true,
+		require  => Exec["installOTP"],
+		notify   => Service['OTPServer'],
 	}
 
 }
